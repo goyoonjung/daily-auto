@@ -2,20 +2,31 @@ name: Create Daily Repo
 
 on:
   schedule:
-    - cron: "0 17 * * *"
+    - cron: "0 17 * * *"   # jalan tiap hari jam 00:00 WIB
   workflow_dispatch:
 
 jobs:
   create_repo:
     runs-on: ubuntu-latest
     steps:
-      - name: Create daily repository
+      - name: Create daily repository and send Telegram notification
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           DATE=$(date +'%Y-%m-%d')
+          REPO_NAME="daily-$DATE"
+
+          # Buat repo harian di GitHub
           curl -X POST \
             -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/user/repos \
-            -d "{\"name\":\"daily-$DATE\",\"private\":false}"
+            -d "{\"name\":\"$REPO_NAME\",\"private\":false}"
+
+          # Kirim notif ke Telegram
+          MESSAGE="🚀 Repo baru dibuat: $REPO_NAME"
+          curl -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+            -d "chat_id=$TELEGRAM_CHAT_ID" \
+            --data-urlencode "text=$MESSAGE"
